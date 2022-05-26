@@ -24,7 +24,12 @@ class MatplotlibWidget(QMainWindow, WaveguideGUI.Ui_MainWindow):
     def update_graph(self):
         n = self.spinBox_2.value()
         m = self.spinBox.value()
-        f = float(self.lineEdit.text())
+        density = self.comboBox.currentIndex()+1
+        if self.lineEdit.text() == '':
+            self.label_6.setText("Please enter the frequency")
+            return
+        else:
+            f = float(self.lineEdit.text())
         omega = 2 * np.pi * f
         fc = self.c / (2 * (np.sqrt(self.mu * self.eps))) * np.sqrt(
             (m / self.a) ** 2 + (n / self.b) ** 2) / 10 ** 9  # Cutoff frequency calculation in GHz
@@ -39,10 +44,10 @@ class MatplotlibWidget(QMainWindow, WaveguideGUI.Ui_MainWindow):
         flag = self.radioButton.isChecked()
         if flag:
             painter = Graphs_TM.Graphs_TM()
-            name_of_wave = f'TM{m}{n}'
+            name_of_wave = f'TM{n}{m}'
         else:
             painter = Graphs_TE.Graphs_TE()
-            name_of_wave = f'TE{m}{n}'
+            name_of_wave = f'TE{n}{m}'
         self.MplWidget1.canvas.axes.clear()
         self.MplWidget2.canvas.axes.clear()
         self.MplWidget3.canvas.axes.clear()
@@ -51,19 +56,19 @@ class MatplotlibWidget(QMainWindow, WaveguideGUI.Ui_MainWindow):
             self.label_6.setText(result)
             return
         if n == 0:
-            painter.TE(self.a, self.b, m, n, self.c, self.h, omega, self.MplWidget1.canvas, 'xy')
-            painter.TE(self.a, self.b, m, n, self.c, self.h, omega, self.MplWidget3.canvas, 'yz')
-            painter.findz(self.a, m, self.h, self.Bc_sq, self.MplWidget2.canvas)
+            painter.TE(self.a, self.b, m, n, self.c, self.h, omega, self.MplWidget1.canvas, 'xy', density)
+            painter.TE(self.a, self.b, m, n, self.c, self.h, omega, self.MplWidget3.canvas, 'yz', density)
+            painter.findz(self.a, m, self.h, self.Bc_sq, density, self.MplWidget2.canvas)
         elif m == 0:
-            painter.TE(self.a, self.b, m, n, self.c, self.h, omega, self.MplWidget1.canvas, 'xy', rotate=True)
-            painter.TE(self.a, self.b, m, n, self.c, self.h, omega, self.MplWidget3.canvas, 'yz', rotate=True)
+            painter.TE(self.a, self.b, m, n, self.c, self.h, omega, self.MplWidget1.canvas, 'xy', density, rotate=True)
+            painter.TE(self.a, self.b, m, n, self.c, self.h, omega, self.MplWidget3.canvas, 'yz', density, rotate=True)
         else:
-            painter.findH(self.a, self.b, n, m, self.MplWidget1.canvas)
-            painter.findE(self.a, self.b, n, m, self.MplWidget1.canvas, 4)
-            painter.findz(self.a, m, self.h, self.Bc_sq, self.MplWidget2.canvas)
-            painter.findz_doted(self.a, self.MplWidget2.canvas)
-            painter.findz(self.b, n, self.h, self.Bc_sq, self.MplWidget3.canvas)
-            painter.findz_doted(self.b, self.MplWidget3.canvas)
+            painter.findH(self.a, self.b, m, n, self.MplWidget1.canvas, density)
+            painter.findE(self.a, self.b, m, n, self.MplWidget1.canvas, density)
+            painter.findz(self.a, n, self.h, self.Bc_sq, self.MplWidget2.canvas, density)
+            # painter.findz_doted(self.a, self.MplWidget2.canvas, density)
+            painter.findz(self.b, m, self.h, self.Bc_sq, self.MplWidget3.canvas, density)
+            # painter.findz_doted(self.b, self.MplWidget3.canvas)
         self.MplWidget1.canvas.axes.set_title(f'{name_of_wave} projected on the XY plane', fontsize=12, color='white')
         self.MplWidget2.canvas.axes.set_title(f'{name_of_wave} projected on the ZX plane', fontsize=12, color='white')
         self.MplWidget3.canvas.axes.set_title(f'{name_of_wave} projected on the ZY plane', fontsize=12, color='white')

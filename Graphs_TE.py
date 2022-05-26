@@ -1,20 +1,17 @@
 import numpy as np
-from scipy.integrate import solve_ivp, odeint
+from scipy.integrate import solve_ivp
 
 
 def paint(plt, sol, color):
-    dot = len(sol.t) / 12
     i = 0
     if color == "red":
         while i < len(sol.y):
             if i % 2 == 0:
-                plt.axes.plot(sol.t[int(dot * 6)], sol.y[i, :][int(dot * 6)], 'r->', sol.t, sol.y[i, :], 'r',
-                              markersize=4)
+                plt.axes.plot(sol.t, sol.y[i, :], 'r')
                 plt.draw()
                 i += 1
             else:
-                plt.axes.plot(sol.t[int(dot * 4)], sol.y[i, :][int(dot * 4)], '<-r', sol.t, sol.y[i, :], 'r',
-                              markersize=4)
+                plt.axes.plot(sol.t, sol.y[i, :], 'r')
                 plt.draw()
                 i += 1
     else:
@@ -22,10 +19,6 @@ def paint(plt, sol, color):
             plt.axes.plot(sol.t, sol.y[i, :], 'b')
             plt.draw()
             i += 1
-
-
-def stop_condition(x, y, a, b, h, Bc_sq):
-    return y[0]
 
 
 def f_e(x, y, a, b, m, n):
@@ -42,13 +35,14 @@ def f_mz(z, x, a, m, h, Bc_sq):
 
 def paint_solution_for_find_TE_M(plt, start, stop, y0_1, y0_2, a, b, m, n):
     t_span = (start, stop)
-    sol = solve_ivp(f_m, t_span, [y0_1, y0_2], events=stop_condition, args=(a, b, m, n), method='BDF')
+    sol = solve_ivp(f_m, t_span, [y0_1, y0_2], args=(a, b, m, n), method='BDF')
     paint(plt, sol, "red")
 
 
 class Graphs_TE:
 
-    def findE(self, a, b, m, n, plt, density, h = 0.02):
+    def findE(self, a, b, m, n, plt, density):
+        density *= 2
         halfway = a / 2
         iterat_m = 0
         while iterat_m < m:
@@ -60,39 +54,52 @@ class Graphs_TE:
                 stop = (iterat_n * 2 + 1) * halfway / n
                 strat2 = (iterat_n * 2 + 2) * halfway / n
                 while i < density:
-                    sh = i * h
-                    sol1 = solve_ivp(f_e, (start1, stop), [y0 + 0.01 + sh, y0 - 0.01 - sh], args=(a, b, m, n), method='BDF')
-                    sol2 = solve_ivp(f_e, (strat2, stop), [y0 + 0.01 + sh, y0 - 0.01 - sh], args=(a, b, m, n), method='BDF')
+                    sh = i * (b - 0.2) / (2 * m * density)
+                    sol1 = solve_ivp(f_e, (start1, stop), [y0 + 0.01 + sh, y0 - 0.01 - sh], args=(a, b, m, n),
+                                     method='BDF')
+                    sol2 = solve_ivp(f_e, (strat2, stop), [y0 + 0.01 + sh, y0 - 0.01 - sh], args=(a, b, m, n),
+                                     method='BDF')
                     paint(plt, sol1, "blue")
                     paint(plt, sol2, "blue")
                     i += 1
                 iterat_n += 1
             iterat_m += 1
 
-    def findH(self, a, b, m, n, plt, h=0.01):
+    def findH(self, a, b, m, n, plt, density, h=0.005):
+        density = 2
         iterat_m = 0
         while iterat_m < m:
             iterat_n = 0
             y0_1 = iterat_m * b / m + h
             y0_2 = (iterat_m + 1) * b / m - h
             while iterat_n < n:
+                i = 0
                 start = iterat_n * (a / n) + h / 2
                 stop = (iterat_n + 1) * a / n - h / 2
-                paint_solution_for_find_TE_M(plt, start, stop, y0_1, y0_2, a, b, m, n)
-                paint_solution_for_find_TE_M(plt, start + 4 * h, stop - 4 * h, y0_1, y0_2, a, b, m, n)
-                paint_solution_for_find_TE_M(plt, stop, start, y0_1, y0_2, a, b, m, n)
+                paint_solution_for_find_TE_M(plt, start + m * 2 * h, stop, y0_1, y0_2, a, b, m, n)
+                while i < density:
+                    shx = i * (a - 0.1) / (2 * n * density)
+                    shy = i * (b - 0.1) / (2 * m * density)
+                    paint_solution_for_find_TE_M(plt, start + shx, stop, y0_1 + shy, y0_2 - shy, a, b, m, n)
+                    paint_solution_for_find_TE_M(plt, stop - shx, start, y0_1 + shy, y0_2 - shy, a, b, m, n)
+                    i += 1
                 iterat_n += 1
             iterat_m += 1
 
-    def findz(self, a, m, h, Bc_sq, plt, shift=0.01):
+    def findz(self, a, m, h, Bc_sq, plt, density, shift=0.01):
+        density *= 2
         iterat_m = 0
-        start = -0.06 * (11 - m)
-        stop = 1
-        t_span = (start, stop)
+        start = -0.5
+        stop = 0.5
         while iterat_m < m:
             y0 = (iterat_m * 2 + 1) * a / (2 * m)
-            sol = solve_ivp(f_mz, t_span, [y0 - shift, y0 + shift], args=(a, m, h, Bc_sq), method='BDF')
-            paint(plt, sol, "red")
+            i = 0
+            while i < density:
+                sh = 0.45 / (density ** 2) * (i ** 2)
+                sol = solve_ivp(f_mz, (start + sh, stop - sh), [y0 - shift, y0 + shift], args=(a, m, h, Bc_sq),
+                                method='BDF')
+                paint(plt, sol, "red")
+                i += 1
             iterat_m += 1
 
     def findz_doted(self, a, plt, shift=0.01):
@@ -104,7 +111,7 @@ class Graphs_TE:
         plt.axes.plot(X, Y, 'o', color='blue', markersize=4)
         plt.draw()
 
-    def TE(self, a, b, m, n, c, h, omega, plt, plane, rotate=False):
+    def TE(self, a, b, m, n, c, h, omega, plt, plane, density, rotate=False):
         val = m + n
         Bx = val * np.pi / a
         t = 1
@@ -123,9 +130,8 @@ class Graphs_TE:
             elif plane == 'yz':
                 Z = (omega / (Bx * c)) * abs(np.sin(omega * t - h * X / 2))
             if rotate:
-                CS = plt.axes.contour(Y, X, Z, 4, colors=['blue'])
+                CS = plt.axes.contour(Y, X, Z, density * 2, colors=['blue'])
             else:
-                CS = plt.axes.contour(X, Y, Z, 4, colors=['blue'])
+                CS = plt.axes.contour(X, Y, Z, density * 2, colors=['blue'])
             plt.axes.clabel(CS, inline=False, fontsize=14, fmt=arrow)
             iterate += 1
-
