@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.integrate import solve_ivp, odeint
+from scipy.integrate import solve_ivp
 
 
 def stop_condition(x, y, a, b, h, Bc_sq):
@@ -7,7 +7,6 @@ def stop_condition(x, y, a, b, h, Bc_sq):
 
 
 def paint(plt, sol, color):
-    dot = len(sol.t) / 2
     i = 0
     if color == "red":
         while i < len(sol.y):
@@ -16,7 +15,7 @@ def paint(plt, sol, color):
             i += 1
     else:
         while i < len(sol.y):
-            plt.axes.plot(sol.t[int(dot)], sol.y[i, :][int(dot)], 'b->', sol.t, sol.y[i, :], 'b', markersize=4)
+            plt.axes.plot(sol.t, sol.y[i, :], 'b')
             plt.draw()
             i += 1
 
@@ -25,7 +24,7 @@ def f_e(x, y, a, b, m, n):
     return ((a * m) / (b * n)) * (np.tan(np.pi * n * x / a) / np.tan(np.pi * m * y / b))
 
 
-def f_m(y, x, a, b, m, n):
+def f_m(x, y, a, b, m, n):
     return -((b * n) / (a * m) * (np.tan(np.pi * m * y / b) / np.tan(np.pi * n * x / a)))
 
 
@@ -35,50 +34,64 @@ def f_e_z(z, x, a, m, h, Bc_sq):
 
 class Graphs_TM:
 
-    def findE(self, a, b, n, m, plt, shift=0.06):
+    def findE(self, a, b, m, n, plt, density, h=0.1):
+        density *= 2
         iterat_m = 0
         while iterat_m < m:
             iterat_n = 0
             y0 = (iterat_m * 2 + 1) * b / (m * 2)
             while iterat_n < n:
-                start = iterat_n * (a / n)
+                start1 = iterat_n * a / n
+                start2 = (iterat_n + 1) * a / n
                 stop = (iterat_n * 2 + 1) * a / (2 * n)
-                t_span = (start, stop)
-                sol = solve_ivp(f_e, t_span, [y0 + shift, y0 - shift], args=(a, b, m, n), method='BDF')
-                paint(plt, sol, "blue")
-                start = (iterat_n + 1) * a / (n)
-                t_span = (start, stop)
-                sol = solve_ivp(f_e, t_span, [y0 + shift, y0 - shift], args=(a, b, m, n), method='BDF')
-                paint(plt, sol, "blue")
+                i = 0
+                while i < density:
+                    sh = i * (b - 0.2) / (2 * m * density)
+                    sol = solve_ivp(f_e, (start1, stop), [y0 + h + sh, y0 - h - sh], args=(a, b, m, n), method='BDF')
+                    paint(plt, sol, "blue")
+                    sol = solve_ivp(f_e, (start2, stop), [y0 + h + sh, y0 - h - sh], args=(a, b, m, n), method='BDF')
+                    paint(plt, sol, "blue")
+                    i += 1
                 iterat_n += 1
             iterat_m += 1
 
-    def findH(self, a, b, n, m, plt, shift=0.1):
+    def findH(self, a, b, m, n, plt, density, h=0.1):
+        density *= 2
         iterat_n = 0
         while iterat_n < n:
             iterat_m = 0
-            x0 = iterat_n * (a / n) + shift
-            x_stop = (iterat_n + 1) * a / n - shift
-            t = np.linspace(x0, x_stop, 41)
+            start = iterat_n * (a / n) + h
+            stop = (iterat_n + 1) * a / n - h
             while iterat_m < m:
+                i = 1
                 y0 = (iterat_m * 2 + 1) * b / (m * 2)
-                sol = odeint(f_m, [y0 + 0.005, y0 - 0.005], t, args=(a, b, m, n))
-                plt.axes.plot(t[20], sol[20][0], 'r->', t[20], sol[20][1], 'r-<', t, sol, 'r')
-                plt.draw()
+                while i < density:
+                    sh = i ** 3 * a / (2 * n * density ** 3)
+                    sol = solve_ivp(f_m, (start + sh, stop - sh), [y0 + 0.001, y0 - 0.001], args=(a, b, m, n),
+                                    method='BDF')
+                    paint(plt, sol, "red")
+                    i += 1
                 iterat_m += 1
             iterat_n += 1
 
-    def findz(self, a, m, h, Bc_sq, plt, shift=0.01):
+    def findz(self, a, m, h, Bc_sq, plt, density, shift=0.0001):
+        density *= 2
         iterat_m = 0
-        i = 0
-        start = -1 + shift
-        stop = 1 - shift
-        t_span = (start, stop)
+        start = -1
+        stop = 0
         while iterat_m < m:
             y0_1 = iterat_m * a / m + shift
             y0_2 = (iterat_m + 1) * a / m - shift
-            sol = solve_ivp(f_e_z, t_span, [y0_1, y0_2], events=stop_condition, args=(a, m, h, Bc_sq), method='BDF')
-            paint(plt, sol, "blue")
+            i = 0
+            while i < density:
+                sh = 1 / (density ** 2) * (i ** 2)
+                sol = solve_ivp(f_e_z, (start + sh, stop), [y0_1, y0_2], events=stop_condition,
+                                args=(a, m, h, Bc_sq), method='BDF')
+                paint(plt, sol, "blue")
+                sol = solve_ivp(f_e_z, (-start - sh, stop), [y0_1, y0_2], events=stop_condition,
+                                args=(a, m, h, Bc_sq), method='BDF')
+                paint(plt, sol, "blue")
+                i += 1
             iterat_m += 1
 
     def findz_doted(self, a, plt, shift=0.01):
