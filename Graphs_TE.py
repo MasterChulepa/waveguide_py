@@ -102,16 +102,11 @@ class Graphs_TE:
                 i += 1
             iterat_m += 1
 
-    def findz_doted(self, a, plt, shift=0.01):
-        start = -1 + shift
-        stop = 1 - shift
-        x = np.arange(start, stop, 0.6)
-        y = np.arange(0.01, a - 0.01, 0.6)
-        X, Y = np.meshgrid(x, y)
-        plt.axes.plot(X, Y, 'o', color='blue', markersize=4)
-        plt.draw()
-
     def TE(self, a, b, m, n, c, h, omega, plt, plane, density, rotate=False):
+        if rotate:
+            temp = a
+            a = b
+            b = temp
         val = m + n
         Bx = val * np.pi / a
         t = 1
@@ -126,12 +121,24 @@ class Graphs_TE:
             x = np.arange(iterate * halfway + 0.1, (iterate + 1) * halfway - 0.01, 0.1)
             X, Y = np.meshgrid(x, y)
             if plane == 'xy':
-                Z = (omega / (Bx * c)) * abs(np.cos(Bx * X))
+                Z = (omega / (Bx * c)) * abs(np.cos(Bx * X / 2 - 1.9)) * np.cos(omega * t)
             elif plane == 'yz':
-                Z = (omega / (Bx * c)) * abs(np.sin(omega * t - h * X / 2))
+                Z = (omega / (Bx * c)) * abs(np.sin(omega * t - h * X / 2 - 2.4))
             if rotate:
                 CS = plt.axes.contour(Y, X, Z, density * 2, colors=['blue'])
             else:
                 CS = plt.axes.contour(X, Y, Z, density * 2, colors=['blue'])
             plt.axes.clabel(CS, inline=False, fontsize=14, fmt=arrow)
             iterate += 1
+
+    def TEH(self, a, b, plt, rotate=False):
+        if rotate:
+            x = np.arange(0.2, b-0.2, 0.2)
+            y = np.arange(0, a, 0.2)
+            X, Y = np.meshgrid(x, y)
+            plt.axes.plot(Y, X, 'r')
+        else:
+            x = np.arange(0.2, a-0.1, 0.2)
+            y = np.arange(0, b, 0.2)
+            X, Y = np.meshgrid(x, y)
+            plt.axes.plot(X, Y, 'r')

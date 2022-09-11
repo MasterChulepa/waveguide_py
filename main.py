@@ -56,19 +56,20 @@ class MatplotlibWidget(QMainWindow, WaveguideGUI.Ui_MainWindow):
             self.label_6.setText(result)
             return
         if n == 0:
-            painter.TE(self.a, self.b, m, n, self.c, self.h, omega, self.MplWidget1.canvas, 'xy', density)
-            painter.TE(self.a, self.b, m, n, self.c, self.h, omega, self.MplWidget3.canvas, 'yz', density)
-            painter.findz(self.a, m, self.h, self.Bc_sq, density, self.MplWidget2.canvas)
-        elif m == 0:
             painter.TE(self.a, self.b, m, n, self.c, self.h, omega, self.MplWidget1.canvas, 'xy', density, rotate=True)
             painter.TE(self.a, self.b, m, n, self.c, self.h, omega, self.MplWidget3.canvas, 'yz', density, rotate=True)
+            painter.TEH(self.a, self.b, self.MplWidget1.canvas)
+            painter.findz(self.a, m, self.h, self.Bc_sq, self.MplWidget2.canvas, density)
+        elif m == 0:
+            painter.TE(self.a, self.b, m, n, self.c, self.h, omega, self.MplWidget1.canvas, 'xy', density)
+            painter.TE(self.a, self.b, m, n, self.c, self.h, omega, self.MplWidget3.canvas, 'yz', density)
+            painter.TEH(self.a, self.b, self.MplWidget1.canvas, rotate=True)
+            painter.findz(self.a, n, self.h, self.Bc_sq, self.MplWidget2.canvas, density)
         else:
             painter.findH(self.a, self.b, m, n, self.MplWidget1.canvas, density)
             painter.findE(self.a, self.b, m, n, self.MplWidget1.canvas, density)
             painter.findz(self.a, n, self.h, self.Bc_sq, self.MplWidget2.canvas, density)
-            # painter.findz_doted(self.a, self.MplWidget2.canvas, density)
             painter.findz(self.b, m, self.h, self.Bc_sq, self.MplWidget3.canvas, density)
-            # painter.findz_doted(self.b, self.MplWidget3.canvas)
         self.MplWidget1.canvas.axes.set_title(f'{name_of_wave} projected on the XY plane', fontsize=12, color='white')
         self.MplWidget2.canvas.axes.set_title(f'{name_of_wave} projected on the ZX plane', fontsize=12, color='white')
         self.MplWidget3.canvas.axes.set_title(f'{name_of_wave} projected on the ZY plane', fontsize=12, color='white')
